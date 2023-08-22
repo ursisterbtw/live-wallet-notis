@@ -1,0 +1,96 @@
+<html>
+  <head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="web3.js"></script>
+    <style>
+      body {
+        background-color: #000000;
+        color: #00FF00;
+        font-family: 'Courier New', Courier, monospace;
+        padding: 20px;
+      }
+      button {
+        margin: 10px;
+        padding: 10px;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      #connect-wallet {
+        background-color: #4caf50;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+      #connect-wallet:hover {
+        background-color: #45a049;
+      }
+      .connected-wallet {
+        background-color: #0000FF;
+      }
+      .connected-wallet:hover {
+        background-color: #000099;
+      }
+      h2 {
+        color: #00FF00;
+        text-align: center;
+      }
+      #server-notification {
+        margin: 20px;
+        padding: 10px;
+        border: 1px solid #00FF00;
+        background-color: #000000;
+        color: #00FF00;
+        overflow: auto;
+      }
+      p {
+        color: #00FF00;
+      }
+    </style>
+    <script>
+      let socket = io();
+      let el;
+      let transactions = [];
+
+      socket.on("notification", (notificationBody) => {
+        console.log("got notification");
+        let timestamp = new Date().toLocaleString();
+        transactions.unshift(timestamp + ": " + notificationBody);
+        if (transactions.length > 5) {
+          transactions.pop();
+        }
+        el = document.getElementById("server-notification");
+        el.innerHTML = transactions.join('<br><br>');
+      });
+
+      async function getAccount() {
+        const accounts = await ethereum.request({
+          method: "eth_requestAccounts",
+        });
+        const account = accounts[0];
+        return account;
+      }
+
+      async function registerAddress() {
+        const account = await getAccount();
+        console.log("send address");
+        if (account) {
+          socket.emit("register address", account);
+          let button = document.getElementById("connect-wallet");
+          button.innerHTML = "Wallet Connected";
+          button.classList.remove("connect-wallet");
+          button.classList.add("connected-wallet");
+        }
+      }
+
+      window.onload = function() {
+        document.getElementById("connect-wallet").addEventListener("click", registerAddress);
+      };
+    </script>
+  </head>
+  <body>
+    <h2>ursister's live tracker<span class="showAccount"></span></h2>
+    <button id="connect-wallet" class="connect-wallet">Connect Wallet</button>
+    <p id="server-notification"></p>
+  </body>
+</html>
